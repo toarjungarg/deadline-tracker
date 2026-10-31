@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Deadline Tracker",
+  "version": "0.1.0",
+  "description": "Keeps track of deadlines from Learn and Crowdmark and adds them to your calendar.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Deadline Tracker"
+  }
+}
