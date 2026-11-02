@@ -1,20 +1,76 @@
-// Runs every time the popup opens: gets the deadlines and draws them.
+// Runs every time the popup opens: shows the saved deadlines, and reads them again on Refresh.
 
 import { sortByStart, upcoming, groupByDay, daysUntil } from "./deadlines.js";
 import { sampleDeadlines } from "./sample.js";
 import { toIcs } from "./calendar.js";
+import { loadDeadlines, refreshDeadlines } from "./store.js";
 
-function main() {
+// What the list shows right now, so Download .ics saves the same thing
+let shown = [];
+
+async function main() {
   const now = new Date();
-
-  // For now the list is sample data. Learn and Crowdmark replace this later.
-  const deadlines = sortByStart(upcoming(sampleDeadlines(now), now));
-
   showToday(now);
-  showDeadlines(deadlines, now);
-  setStatus(countLabel(deadlines.length, "sample deadline"));
+  byId("download-ics").addEventListener("click", () => downloadIcs(shown));
 
-  byId("download-ics").addEventListener("click", () => downloadIcs(deadlines));
+  // popup.html?demo shows made-up deadlines, for screenshots with no private info
+  if (new URLSearchParams(location.search).has("demo")) {
+    byId("refresh").hidden = true;
+    draw(sampleDeadlines(now), now, "No upcoming deadlines.");
+    setStatus("Demo mode: made-up deadlines");
+    return;
+  }
+
+  byId("refresh").addEventListener("click", refresh);
+  try {
+    const saved = await loadDeadlines();
+    const emptyText = saved.savedAt
+      ? "No upcoming deadlines."
+      : "Nothing saved yet. Press Refresh to read Learn and Crowdmark.";
+    draw(saved.deadlines, now, emptyText);
+    setStatus(saved.savedAt ? `Last updated ${whenLabel(saved.savedAt, now)}` : "");
+  } catch {
+    draw([], now, "No upcoming deadlines.");
+    setStatus("Couldn't open saved deadlines");
+  }
+}
+
+// Reads Learn and Crowdmark again, saves, and redraws.
+async function refresh() {
+  const button = byId("refresh");
+  button.disabled = true;
+  setStatus("Reading Learn and Crowdmark...");
+  try {
+    const result = await refreshDeadlines();
+    const now = new Date();
+    draw(result.deadlines, now, "No upcoming deadlines.");
+    showErrors(result.errors);
+    setStatus(result.savedAt ? `Last updated ${whenLabel(result.savedAt, now)}` : "Nothing read yet");
+  } catch {
+    setStatus("Refresh failed");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+// Keeps today's and later deadlines, earliest first, and draws them.
+function draw(deadlines, now, emptyText) {
+  shown = sortByStart(upcoming(deadlines, now));
+  byId("empty").textContent = emptyText;
+  showDeadlines(shown, now);
+}
+
+// One line per source that couldn't be read, like "Couldn't read Crowdmark"
+function showErrors(errors) {
+  const box = byId("errors");
+  box.replaceChildren(...errors.map((error) => textElement("p", "error", error)));
+  box.hidden = errors.length === 0;
+}
+
+// "2:15 p.m." for today, "Nov 1, 2:15 p.m." for earlier days
+function whenLabel(date, now) {
+  if (daysUntil(date, now) === 0) return formatTime(date);
+  return date.toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 // "Friday, October 31" under the title
@@ -81,11 +137,6 @@ function formatTime(date) {
 function typeLabel(type) {
   const labels = { assignment: "Assignment", quiz: "Quiz", event: "Event" };
   return labels[type] || type;
-}
-
-// "1 sample deadline", "5 sample deadlines"
-function countLabel(count, word) {
-  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
 // Saves the list as deadlines.ics, which Apple or Google Calendar can open.

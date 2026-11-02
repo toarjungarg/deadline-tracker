@@ -15,9 +15,15 @@
     <main id="list" class="list"></main>
     <p id="empty" class="empty" hidden>No upcoming deadlines.</p>
 
+    <!-- One line per source that couldn't be read -->
+    <div id="errors" class="errors" hidden></div>
+
     <footer class="footer">
       <span id="status" class="status"></span>
-      <button id="download-ics" class="button" type="button">Download .ics</button>
+      <div class="buttons">
+        <button id="refresh" class="button button--plain" type="button">Refresh</button>
+        <button id="download-ics" class="button" type="button">Download .ics</button>
+      </div>
     </footer>
 
     <script type="module" src="popup.js"></script>

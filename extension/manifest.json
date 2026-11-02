@@ -3,6 +3,7 @@
   "name": "Deadline Tracker",
   "version": "0.1.0",
   "description": "Keeps track of deadlines from Learn and Crowdmark and adds them to your calendar.",
+  "permissions": ["storage"],
   "host_permissions": [
     "https://learn.uwaterloo.ca/*",
     "https://app.crowdmark.com/*"
