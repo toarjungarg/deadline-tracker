@@ -1,28 +1,25 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <title>Deadline Tracker</title>
-    <style>
-      body {
-        width: 280px;
-        margin: 0;
-        padding: 12px 16px;
-        font-family: system-ui, sans-serif;
-      }
-      h1 {
-        font-size: 18px;
-        margin: 0 0 8px;
-      }
-      p {
-        margin: 0;
-        color: #444;
-      }
-    </style>
+    <link rel="stylesheet" href="popup.css">
   </head>
   <body>
-    <h1>Deadline Tracker</h1>
-    <p id="message"></p>
-    <script src="popup.js"></script>
+    <header class="header">
+      <h1>Deadline Tracker</h1>
+      <p id="today" class="today"></p>
+    </header>
+
+    <!-- popup.js fills this with one section per day -->
+    <main id="list" class="list"></main>
+    <p id="empty" class="empty" hidden>No upcoming deadlines.</p>
+
+    <footer class="footer">
+      <span id="status" class="status"></span>
+      <button id="download-ics" class="button" type="button">Download .ics</button>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
   </body>
 </html>

@@ -1,0 +1,145 @@
+/* Colours live here once; everything below uses these names. */
+:root {
+  --bg: #ffffff;
+  --card: #f5f6f8;
+  --text: #1c1e21;
+  --muted: #65676b;
+  --line: #e4e6eb;
+  --assignment: #2f6fde;
+  --quiz: #e8871e;
+  --event: #2e9e5b;
+  --button: #1c1e21;
+  --button-text: #ffffff;
+}
+
+/* Used automatically when the computer is in dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18191a;
+    --card: #242526;
+    --text: #e4e6eb;
+    --muted: #a8abaf;
+    --line: #3a3b3c;
+    --assignment: #5b8def;
+    --quiz: #f0a04b;
+    --event: #4cc17f;
+    --button: #e4e6eb;
+    --button-text: #18191a;
+  }
+}
+
+body {
+  width: 320px;
+  margin: 0;
+  padding: 14px 16px 12px;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 system-ui, -apple-system, sans-serif;
+}
+
+/* Top: name and today's date */
+.header h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.today {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* The list scrolls if it gets long */
+.list {
+  max-height: 390px;
+  margin-top: 6px;
+  overflow-y: auto;
+}
+
+.day-heading {
+  margin: 12px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* One deadline: coloured bar on the left, text in the middle, time on the right */
+.deadline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--type-colour);
+  border-radius: 6px;
+  background: var(--card);
+}
+
+.deadline--assignment { --type-colour: var(--assignment); }
+.deadline--quiz { --type-colour: var(--quiz); }
+.deadline--event { --type-colour: var(--event); }
+
+.deadline-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.deadline-course {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.deadline-title {
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+
+.deadline-when {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 16px 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Bottom: status on the left, button on the right */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.status {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.button {
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--button);
+  color: var(--button-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:hover {
+  opacity: 0.85;
+}
