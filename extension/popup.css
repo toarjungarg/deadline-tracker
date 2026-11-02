@@ -52,6 +52,24 @@ body {
   font-size: 13px;
 }
 
+/* Google sign-in row under the date */
+.google {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.google[hidden] {
+  display: none;
+}
+
+.google-status {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 /* The list scrolls if it gets long */
 .list {
   max-height: 390px;
@@ -151,7 +169,7 @@ body {
   cursor: default;
 }
 
-/* Refresh: outlined, so Download stays the main button */
+/* Sync now and the Google buttons: outlined, so Download stays the main button */
 .button--plain {
   border: 1px solid var(--line);
   background: transparent;
