@@ -11,6 +11,13 @@
       <p id="today" class="today"></p>
     </header>
 
+    <!-- Google sign-in: either the Sign in button, or "Signed in" with Sign out -->
+    <div id="google" class="google">
+      <span id="google-status" class="google-status"></span>
+      <button id="sign-in" class="button button--plain" type="button" hidden>Sign in with Google</button>
+      <button id="sign-out" class="button button--plain" type="button" hidden>Sign out</button>
+    </div>
+
     <!-- popup.js fills this with one section per day -->
     <main id="list" class="list"></main>
     <p id="empty" class="empty" hidden>No upcoming deadlines.</p>
@@ -21,7 +28,7 @@
     <footer class="footer">
       <span id="status" class="status"></span>
       <div class="buttons">
-        <button id="refresh" class="button button--plain" type="button">Refresh</button>
+        <button id="sync-now" class="button button--plain" type="button">Sync now</button>
         <button id="download-ics" class="button" type="button">Download .ics</button>
       </div>
     </footer>

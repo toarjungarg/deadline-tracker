@@ -1,9 +1,12 @@
-// Runs every time the popup opens: shows the saved deadlines, and reads them again on Refresh.
+// Runs every time the popup opens: shows the saved deadlines and the last sync,
+// and asks the background (background.js) to sync again on Sync now.
 
 import { sortByStart, upcoming, groupByDay, daysUntil } from "./deadlines.js";
 import { sampleDeadlines } from "./sample.js";
 import { toIcs } from "./calendar.js";
-import { loadDeadlines, refreshDeadlines } from "./store.js";
+import { loadDeadlines } from "./store.js";
+import { loadSummary } from "./summary.js";
+import { getToken, isSignedIn, signOut } from "./google.js";
 
 // What the list shows right now, so Download .ics saves the same thing
 let shown = [];
@@ -15,42 +18,94 @@ async function main() {
 
   // popup.html?demo shows made-up deadlines, for screenshots with no private info
   if (new URLSearchParams(location.search).has("demo")) {
-    byId("refresh").hidden = true;
+    byId("sync-now").hidden = true;
+    byId("google").hidden = true;
     draw(sampleDeadlines(now), now, "No upcoming deadlines.");
     setStatus("Demo mode: made-up deadlines");
     return;
   }
 
-  byId("refresh").addEventListener("click", refresh);
+  byId("sync-now").addEventListener("click", syncNow);
+  byId("sign-in").addEventListener("click", signIn);
+  byId("sign-out").addEventListener("click", signOutClicked);
+  showGoogle(await isSignedIn());
+
   try {
-    const saved = await loadDeadlines();
-    const emptyText = saved.savedAt
-      ? "No upcoming deadlines."
-      : "Nothing saved yet. Press Refresh to read Learn and Crowdmark.";
-    draw(saved.deadlines, now, emptyText);
-    setStatus(saved.savedAt ? `Last updated ${whenLabel(saved.savedAt, now)}` : "");
+    await showSaved(now);
   } catch {
     draw([], now, "No upcoming deadlines.");
     setStatus("Couldn't open saved deadlines");
   }
 }
 
-// Reads Learn and Crowdmark again, saves, and redraws.
-async function refresh() {
-  const button = byId("refresh");
+// Draws the saved list and the last sync's status and problems.
+async function showSaved(now) {
+  const saved = await loadDeadlines();
+  const summary = await loadSummary();
+  const emptyText = saved.savedAt
+    ? "No upcoming deadlines."
+    : "Nothing saved yet. Press Sync now to read Learn and Crowdmark.";
+  draw(saved.deadlines, now, emptyText);
+  showErrors(summary ? summary.errors : []);
+  if (summary) {
+    setStatus(summaryLabel(summary, now));
+  } else {
+    setStatus(saved.savedAt ? `Last updated ${whenLabel(saved.savedAt, now)}` : "");
+  }
+}
+
+// Asks the background to read Learn and Crowdmark and update the calendar, then redraws.
+// The work happens in the background, so it finishes even if the popup closes.
+async function syncNow() {
+  const button = byId("sync-now");
   button.disabled = true;
-  setStatus("Reading Learn and Crowdmark...");
+  setStatus("Syncing...");
   try {
-    const result = await refreshDeadlines();
-    const now = new Date();
-    draw(result.deadlines, now, "No upcoming deadlines.");
-    showErrors(result.errors);
-    setStatus(result.savedAt ? `Last updated ${whenLabel(result.savedAt, now)}` : "Nothing read yet");
+    const summary = await chrome.runtime.sendMessage({ type: "sync-now" });
+    if (!summary) throw new Error("no answer");
+    await showSaved(new Date());
   } catch {
-    setStatus("Refresh failed");
+    setStatus("Sync failed");
   } finally {
     button.disabled = false;
   }
+}
+
+// Opens Google's sign-in window, then syncs straight away.
+async function signIn() {
+  try {
+    await getToken({ interactive: true });
+    showGoogle(true);
+    await syncNow();
+  } catch (error) {
+    showErrors([error.message]);
+  }
+}
+
+async function signOutClicked() {
+  await signOut();
+  showGoogle(false);
+  setStatus("Signed out. Deadlines still update here.");
+}
+
+function showGoogle(signedIn) {
+  byId("google-status").textContent = signedIn ? "Signed in to Google" : "Google Calendar:";
+  byId("sign-in").hidden = signedIn;
+  byId("sign-out").hidden = !signedIn;
+}
+
+// "Last synced 2:15 p.m.: 2 added, 1 updated", or a note to sign in
+function summaryLabel(summary, now) {
+  const when = `Last synced ${whenLabel(summary.time, now)}`;
+  if (!summary.calendar) {
+    return summary.signedIn ? when : `${when}. Sign in to add them to Google Calendar.`;
+  }
+  const { added, updated, failed } = summary.calendar;
+  const parts = [];
+  if (added) parts.push(`${added} added`);
+  if (updated) parts.push(`${updated} updated`);
+  if (failed) parts.push(`${failed} failed`);
+  return `${when}: ${parts.length ? parts.join(", ") : "calendar up to date"}`;
 }
 
 // Keeps today's and later deadlines, earliest first, and draws them.
