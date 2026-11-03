@@ -46,7 +46,7 @@ async function showSaved(now) {
     ? "No upcoming deadlines."
     : "Nothing saved yet. Press Sync now to read Learn and Crowdmark.";
   draw(saved.deadlines, now, emptyText);
-  showErrors(summary ? summary.errors : []);
+  showErrors(summary ? summary.errors : [], summary ? skippedNotes(summary.skipped, saved.sources, now) : []);
   if (summary) {
     setStatus(summaryLabel(summary, now));
   } else {
@@ -115,11 +115,28 @@ function draw(deadlines, now, emptyText) {
   showDeadlines(shown, now);
 }
 
-// One line per source that couldn't be read, like "Couldn't read Crowdmark"
-function showErrors(errors) {
+// One line per source that couldn't be read, like "Couldn't read Crowdmark",
+// then quieter notes for sources that were skipped because they weren't open
+function showErrors(errors, notes = []) {
   const box = byId("errors");
-  box.replaceChildren(...errors.map((error) => textElement("p", "error", error)));
-  box.hidden = errors.length === 0;
+  box.replaceChildren(
+    ...errors.map((error) => textElement("p", "error", error)),
+    ...notes.map((note) => textElement("p", "note", note)),
+  );
+  box.hidden = errors.length === 0 && notes.length === 0;
+}
+
+// "Learn wasn't open: showing what it had at 2:15 p.m." for each skipped source
+function skippedNotes(skipped, sources, now) {
+  const names = { learn: "Learn", crowdmark: "Crowdmark" };
+  return skipped
+    .filter((site) => names[site])
+    .map((site) => {
+      const last = sources[site] ? new Date(sources[site]) : null;
+      return last && !Number.isNaN(last.getTime())
+        ? `${names[site]} wasn't open: showing what it had at ${whenLabel(last, now)}`
+        : `${names[site]} hasn't been read yet: open it, or press Sync now`;
+    });
 }
 
 // "2:15 p.m." for today, "Nov 1, 2:15 p.m." for earlier days

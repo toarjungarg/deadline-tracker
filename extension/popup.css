@@ -192,3 +192,10 @@ body {
   color: var(--error);
   font-size: 12px;
 }
+
+/* "Learn wasn't open: ..." is a note, not a problem, so it's quieter */
+.note {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+}

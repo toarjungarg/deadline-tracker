@@ -29,6 +29,8 @@ export async function loadSummary() {
     signedIn: summary.signedIn === true,
     calendar: isCounts(summary.calendar) ? summary.calendar : null,
     errors: Array.isArray(summary.errors) ? summary.errors.filter((e) => typeof e === "string") : [],
+    // Sites that weren't open, so they kept their last saved deadlines
+    skipped: Array.isArray(summary.skipped) ? summary.skipped.filter((s) => typeof s === "string") : [],
   };
 }
 
