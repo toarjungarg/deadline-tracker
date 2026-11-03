@@ -7,9 +7,18 @@ import { toIcs } from "./calendar.js";
 import { loadDeadlines } from "./store.js";
 import { loadSummary } from "./summary.js";
 import { getToken, isSignedIn, signOut } from "./google.js";
+import { loadDoneIds, saveDoneIds, markDone } from "./done.js";
 
 // What the list shows right now, so Download .ics saves the same thing
 let shown = [];
+
+// The ids of deadlines ticked off as done, and the ids of every saved deadline
+// (so ids of deadlines that are gone get dropped when saving)
+let doneIds = new Set();
+let savedIds = new Set();
+
+// Demo mode ticks boxes on screen only and never saves them
+let demo = false;
 
 async function main() {
   const now = new Date();
@@ -18,6 +27,7 @@ async function main() {
 
   // popup.html?demo shows made-up deadlines, for screenshots with no private info
   if (new URLSearchParams(location.search).has("demo")) {
+    demo = true;
     byId("sync-now").hidden = true;
     byId("google").hidden = true;
     draw(sampleDeadlines(now), now, "No upcoming deadlines.");
@@ -42,6 +52,8 @@ async function main() {
 async function showSaved(now) {
   const saved = await loadDeadlines();
   const summary = await loadSummary();
+  doneIds = await loadDoneIds();
+  savedIds = new Set(saved.deadlines.map((deadline) => deadline.id));
   const emptyText = saved.savedAt
     ? "No upcoming deadlines."
     : "Nothing saved yet. Press Sync now to read Learn and Crowdmark.";
@@ -170,20 +182,59 @@ function showDeadlines(deadlines, now) {
   }
 }
 
-// One row: coloured bar by type, course and title, time on the right.
+// One row: coloured bar by type, a done checkbox, course and title, time on the right.
+// The text sits inside the checkbox's <label>, so clicking the title ticks it too
+// and screen readers read the title as the checkbox's name.
 function deadlineRow(deadline) {
   const row = document.createElement("article");
   row.className = `deadline deadline--${deadline.type}`;
 
-  const text = document.createElement("div");
+  const box = document.createElement("input");
+  box.type = "checkbox";
+  box.className = "deadline-done";
+  box.checked = doneIds.has(deadline.id);
+  box.addEventListener("change", () => doneChanged(deadline, box, row));
+
+  const text = document.createElement("span");
   text.className = "deadline-text";
   text.append(
     textElement("span", "deadline-course", deadline.course || typeLabel(deadline.type)),
     textElement("span", "deadline-title", deadline.title),
   );
 
-  row.append(text, textElement("span", "deadline-when", timeLabel(deadline)));
+  const label = document.createElement("label");
+  label.className = "deadline-label";
+  label.append(box, text);
+
+  row.append(label, textElement("span", "deadline-when", timeLabel(deadline)));
+  row.classList.toggle("deadline--done", box.checked);
   return row;
+}
+
+// Ticked or unticked: grey the row out (or back), save it, then update the calendar.
+async function doneChanged(deadline, box, row) {
+  const done = box.checked;
+  row.classList.toggle("deadline--done", done);
+  // Changed here first and then the whole set is saved, so two quick ticks can't undo each other
+  if (done) doneIds.add(deadline.id);
+  else doneIds.delete(deadline.id);
+  if (demo) {
+    return;
+  }
+  try {
+    await saveDoneIds(doneIds, { knownIds: savedIds });
+  } catch {
+    // Couldn't save, so put the box back the way it was
+    if (done) doneIds.delete(deadline.id);
+    else doneIds.add(deadline.id);
+    box.checked = !done;
+    row.classList.toggle("deadline--done", !done);
+    setStatus("Couldn't save that");
+    return;
+  }
+  // Only the calendar is updated (Learn and Crowdmark aren't read again). Not waited for,
+  // and if it fails the next sync puts "Done: " on the event anyway.
+  chrome.runtime.sendMessage({ type: "update-calendar" }).catch(() => {});
 }
 
 // "Today", "Tomorrow" or "Tuesday, Nov 4 (in 4 days)"
@@ -213,7 +264,7 @@ function typeLabel(type) {
 
 // Saves the list as deadlines.ics, which Apple or Google Calendar can open.
 function downloadIcs(deadlines) {
-  const file = new Blob([toIcs(deadlines)], { type: "text/calendar" });
+  const file = new Blob([toIcs(markDone(deadlines, doneIds))], { type: "text/calendar" });
   const url = URL.createObjectURL(file);
   const link = document.createElement("a");
   link.href = url;

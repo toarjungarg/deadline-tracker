@@ -23,9 +23,10 @@ export function eventTimes(deadline) {
   return { start: new Date(deadline.start.getTime() - blockMs), end: deadline.start };
 }
 
-// "MATH 101: Assignment 5"
+// "MATH 101: Assignment 5", or "Done: MATH 101: Assignment 5" once it's ticked off (done.js)
 export function eventTitle(deadline) {
-  return deadline.course ? `${deadline.course}: ${deadline.title}` : deadline.title;
+  const title = deadline.course ? `${deadline.course}: ${deadline.title}` : deadline.title;
+  return deadline.done === true ? `Done: ${title}` : title;
 }
 
 // One deadline as a Google Calendar event.

@@ -4,8 +4,10 @@
 // something needs it and stops it when it's idle, so the hourly timer lives in chrome.alarms.
 // The sites are read through their own tabs (tabs.js): the hourly sync only uses tabs you have open,
 // and Sync now opens a background tab for a site that isn't open.
+// Ticking a deadline done in the popup only updates the calendar (updateCalendar), without reading the sites.
 
-import { refreshDeadlines, siteReaders } from "./store.js";
+import { refreshDeadlines, siteReaders, loadDeadlines } from "./store.js";
+import { loadDoneIds, markDone } from "./done.js";
 import { syncToGoogle } from "./calendar-sync.js";
 import { getToken, isSignedIn } from "./google.js";
 import { saveSummary } from "./summary.js";
@@ -51,7 +53,7 @@ async function runSync({ interactive, readers }) {
 
     summary.signedIn = await signedIn(interactive, summary.errors);
     if (summary.signedIn) {
-      const counts = await syncToGoogle(result.deadlines, { getToken: () => getToken({ interactive: false }) });
+      const counts = await syncDone(result.deadlines);
       const { added, updated, unchanged, failed } = counts;
       summary.calendar = { added, updated, unchanged, failed };
       summary.errors.push(...counts.errors);
@@ -61,6 +63,34 @@ async function runSync({ interactive, readers }) {
   }
   await saveSummary(summary);
   return summary;
+}
+
+// Puts the deadlines on Google Calendar, with "Done: " on the ones ticked off in the popup.
+async function syncDone(deadlines) {
+  const doneIds = await loadDoneIds();
+  return syncToGoogle(markDone(deadlines, doneIds), { getToken: () => getToken({ interactive: false }) });
+}
+
+// After a tick in the popup: update the calendar from the saved deadlines, without reading Learn
+// or Crowdmark. It shares the one-sync-at-a-time lock, so it can't add an event twice either.
+// If a full sync is already running, that one is used instead (the next sync picks up the tick).
+export function updateCalendar() {
+  if (!running) {
+    running = runCalendarUpdate().finally(() => {
+      running = null;
+    });
+  }
+  return running;
+}
+
+// Returns the calendar counts, or null if you're not signed in to Google.
+async function runCalendarUpdate() {
+  if (!(await isSignedIn())) {
+    return null;
+  }
+  const saved = await loadDeadlines();
+  const { added, updated, unchanged, failed } = await syncDone(saved.deadlines);
+  return { added, updated, unchanged, failed };
 }
 
 async function signedIn(interactive, errors) {
@@ -98,14 +128,21 @@ export function onAlarm(alarm) {
   }
 }
 
-// The popup sends { type: "sync-now" }. Only messages from this extension are answered.
+// The popup sends { type: "sync-now" } or, after a tick, { type: "update-calendar" }.
+// Only messages from this extension are answered.
 export function onMessage(message, sender, sendResponse) {
-  if (sender.id !== chrome.runtime.id || !message || message.type !== "sync-now") {
+  if (sender.id !== chrome.runtime.id || !message) {
     return false;
   }
-  syncAll({ interactive: message.interactive === true, openIfMissing: true }).then(sendResponse, () =>
-    sendResponse(null),
-  );
+  let work;
+  if (message.type === "sync-now") {
+    work = syncAll({ interactive: message.interactive === true, openIfMissing: true });
+  } else if (message.type === "update-calendar") {
+    work = updateCalendar();
+  } else {
+    return false;
+  }
+  work.then(sendResponse, () => sendResponse(null));
   // true keeps the reply open until the sync finishes
   return true;
 }
