@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzBhDbQFFE7EUgSD4gnrRiB7cs3D1qYKxd0iLC7qClQ/oDl7dQghTnKzg2xHARgP2Tc2FSqzSPIikYOLl370DaPmqTu35MOyr34JgL0l2ydTzAZ0P6nUFHwaBxWVG6OAqTPAuIDaitv7TWA80OxpRb25A8UgLZ99f7XvALbdwfPqRFeRFdlg4bMdM/nG8j98e4jPzrQS94F3a6eJPeeJgH7abqTk/H92kmjNgP8lMEqTySI1OrYPJgzt4AGtZ6DgnFr7KIGkp3LK6mgVBWjyRfVR0QFx8v1DxMP9D9ogwLuTQRt4mapSg1qBDEBPjpFM/Gyyry9L89MlV/UEJDTZECwIDAQAB",
   "description": "Keeps track of deadlines from Learn and Crowdmark and adds them to your calendar.",
-  "permissions": ["storage", "identity", "alarms"],
+  "permissions": ["storage", "identity", "alarms", "scripting"],
   "host_permissions": [
     "https://learn.uwaterloo.ca/*",
     "https://app.crowdmark.com/*",

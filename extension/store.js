@@ -5,13 +5,23 @@ import { makeDeadline, sortByStart } from "./deadlines.js";
 import { readLearn } from "./learn.js";
 import { readCrowdmark } from "./crowdmark.js";
 
-export const DEFAULT_READERS = { learn: readLearn, crowdmark: readCrowdmark };
+// The real readers. openIfMissing: open a background tab for a site that isn't open (Sync now);
+// otherwise a site with no open tab is skipped this time.
+export function siteReaders({ openIfMissing = false } = {}) {
+  return {
+    learn: () => readLearn({ openIfMissing }),
+    crowdmark: () => readCrowdmark({ openIfMissing }),
+  };
+}
+
+export const DEFAULT_READERS = siteReaders();
 
 // Everything is saved under this one name in chrome.storage.local
 export const STORAGE_KEY = "saved";
 
 // Runs every reader at once. One failing doesn't stop the others.
-// Returns { deadlines, errors, succeeded, failed }
+// A reader that was skipped (its site wasn't open) isn't an error.
+// Returns { deadlines, errors, succeeded, failed, skipped }
 export async function collectDeadlines(readers = DEFAULT_READERS) {
   const names = Object.keys(readers);
   const results = await Promise.allSettled(names.map((name) => readers[name]()));
@@ -20,28 +30,32 @@ export async function collectDeadlines(readers = DEFAULT_READERS) {
   const errors = [];
   const succeeded = [];
   const failed = [];
+  const skipped = [];
   results.forEach((result, i) => {
     const name = names[i];
     if (result.status === "fulfilled" && Array.isArray(result.value)) {
       deadlines.push(...result.value);
       succeeded.push(name);
+    } else if (result.reason && result.reason.skipped === true) {
+      skipped.push(name);
     } else {
       failed.push(name);
       errors.push(errorMessage(name, result.reason));
     }
   });
 
-  return { deadlines: removeDuplicates(deadlines), errors, succeeded, failed };
+  return { deadlines: removeDuplicates(deadlines), errors, succeeded, failed, skipped };
 }
 
 // Reads everything again and saves it.
-// A source that fails keeps what it had last time, so a bad read never empties the list.
+// A source that fails or is skipped keeps what it had last time, so the list never empties by itself.
 export async function refreshDeadlines({ readers = DEFAULT_READERS, storage, now = new Date() } = {}) {
   storage = storage || chromeStorage();
   const before = await loadDeadlines(storage);
   const result = await collectDeadlines(readers);
 
-  const kept = before.deadlines.filter((deadline) => result.failed.includes(deadline.source));
+  const notRead = [...result.failed, ...result.skipped];
+  const kept = before.deadlines.filter((deadline) => notRead.includes(deadline.source));
   const deadlines = removeDuplicates([...result.deadlines, ...kept]);
 
   // When each source last worked, so the popup can say how fresh the list is
@@ -52,7 +66,7 @@ export async function refreshDeadlines({ readers = DEFAULT_READERS, storage, now
   const savedAt = result.succeeded.length > 0 ? now : before.savedAt;
 
   await saveDeadlines(deadlines, { sources, savedAt }, storage);
-  return { deadlines, errors: result.errors, savedAt, sources };
+  return { deadlines, errors: result.errors, skipped: result.skipped, savedAt, sources };
 }
 
 // Saves only the deadline fields, with dates written as text (storage can't hold Date objects).

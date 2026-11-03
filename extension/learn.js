@@ -1,17 +1,19 @@
 // Reads deadlines from Waterloo Learn (D2L Brightspace) using the login Chrome already has.
-//   readLearn:  asks Learn for your courses and calendar events (needs the internet and your login)
-//   parseLearn: turns Learn's answer into deadline records (no internet, so it can be tested alone)
-// The extension never sees your password: Chrome sends its own Learn login along with each request.
+//   readLearn:       runs readLearnInPage inside a Learn tab (tabs.js), then parses the answer
+//   readLearnInPage: asks Learn for your courses and calendar events, from inside Learn's own page
+//   parseLearn:      turns Learn's answer into deadline records (no internet, so it can be tested alone)
+// The extension never sees your password: the Learn tab sends its own login with each request.
 
 import { makeDeadline, startOfDay } from "./deadlines.js";
+import { runInSite } from "./tabs.js";
 
 export const LEARN_ORIGIN = "https://learn.uwaterloo.ca";
 
 // How far ahead to look for deadlines.
 export const DAYS_AHEAD = 120;
 
-// Used only if Learn doesn't say which API versions it supports.
-const FALLBACK_VERSIONS = { le: "1.74", lp: "1.43" };
+// Used only if Learn doesn't say which API versions it supports (Learn's newest, Nov 2026).
+const FALLBACK_VERSIONS = { le: "1.100", lp: "1.64" };
 
 // D2L's number for a real course (not a department or a term).
 const COURSE_OFFERING_TYPE = 3;
@@ -21,29 +23,96 @@ const MAX_PAGES = 50;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-// Asks Learn for your current courses, then every calendar event in them from today on.
-export async function readLearn(now = new Date()) {
-  const versions = await apiVersions();
+// Reads your current courses and every calendar event in them from today on.
+//   openIfMissing: with no Learn tab open, open one in the background (Sync now does this)
+export async function readLearn({ openIfMissing = false, now = new Date() } = {}) {
+  const from = startOfDay(now);
+  const to = new Date(from.getTime() + DAYS_AHEAD * MS_PER_DAY);
+  const options = {
+    from: from.toISOString(),
+    to: to.toISOString(),
+    fallback: FALLBACK_VERSIONS,
+    courseType: COURSE_OFFERING_TYPE,
+    maxPages: MAX_PAGES,
+  };
+  const answer = await runInSite("learn", readLearnInPage, [options], { openIfMissing });
+  return parseLearn(answer);
+}
 
-  const enrollments = await getAllPages(
-    `/d2l/api/lp/${versions.lp}/enrollments/myenrollments/?orgUnitTypeId=${COURSE_OFFERING_TYPE}`,
-    "Items",
-  );
-  const courseIds = enrollments.filter(isCurrentCourse).map((enrollment) => enrollment.OrgUnit.Id);
-  if (courseIds.length === 0) {
+// Runs inside a Learn tab. Chrome copies only this function's text into the page, so everything
+// it needs is inside it or passed in options. Answers { data: { events, enrollments } } or { error }.
+// Asking from Learn's own page means Learn treats it like its own request.
+export async function readLearnInPage({ from, to, fallback, courseType, maxPages }) {
+  const login = "Couldn't read Learn: log in to Learn in Chrome first";
+
+  async function getJson(path) {
+    let response;
+    try {
+      response = await fetch(path, { credentials: "same-origin", headers: { Accept: "application/json" } });
+    } catch {
+      throw new Error("Couldn't read Learn: no connection");
+    }
+    if (response.status === 401 || response.status === 403) throw new Error(login);
+    if (!response.ok) throw new Error(`Couldn't read Learn (error ${response.status})`);
+    // Without a login, Learn sends its sign-in web page instead of data
+    if (!(response.headers.get("content-type") || "").includes("json")) throw new Error(login);
+    try {
+      return await response.json();
+    } catch {
+      throw new Error("Couldn't read Learn: unexpected answer");
+    }
+  }
+
+  function listFrom(value) {
+    if (Array.isArray(value)) return value;
+    if (value && Array.isArray(value.Objects)) return value.Objects;
+    if (value && Array.isArray(value.Items)) return value.Items;
     return [];
   }
 
-  const from = startOfDay(now);
-  const to = new Date(from.getTime() + DAYS_AHEAD * MS_PER_DAY);
-  const query = new URLSearchParams({
-    orgUnitIdsCSV: courseIds.join(","),
-    startDateTime: from.toISOString(),
-    endDateTime: to.toISOString(),
-  });
-  const events = await getAllPages(`/d2l/api/le/${versions.le}/calendar/events/myEvents/?${query}`, "Objects");
+  // Learn answers in pages. Keeps asking for the next page until there are no more.
+  async function getAllPages(path, listKey) {
+    const items = [];
+    let bookmark = null;
+    for (let page = 0; page < maxPages; page++) {
+      const separator = path.includes("?") ? "&" : "?";
+      const answer = await getJson(path + (bookmark ? `${separator}bookmark=${encodeURIComponent(bookmark)}` : ""));
+      items.push(...listFrom(answer && answer[listKey]));
+      const paging = answer && answer.PagingInfo;
+      if (!paging || !paging.HasMoreItems || !paging.Bookmark) break;
+      bookmark = paging.Bookmark;
+    }
+    return items;
+  }
 
-  return parseLearn({ events, enrollments });
+  try {
+    // Which API versions Learn has; the newest is used
+    let versions = fallback;
+    try {
+      const products = await getJson("/d2l/api/versions/");
+      const latest = (code) => (products.find((product) => product.ProductCode === code) || {}).LatestVersion;
+      versions = { le: latest("le") || fallback.le, lp: latest("lp") || fallback.lp };
+    } catch {
+      versions = fallback;
+    }
+
+    const enrollments = await getAllPages(
+      `/d2l/api/lp/${versions.lp}/enrollments/myenrollments/?orgUnitTypeId=${courseType}`,
+      "Items",
+    );
+    const courseIds = enrollments
+      .filter((e) => e && e.OrgUnit && e.OrgUnit.Id != null && (e.Access || {}).IsActive !== false && (e.Access || {}).CanAccess !== false)
+      .map((e) => e.OrgUnit.Id);
+    if (courseIds.length === 0) {
+      return { data: { events: [], enrollments } };
+    }
+
+    const query = new URLSearchParams({ orgUnitIdsCSV: courseIds.join(","), startDateTime: from, endDateTime: to });
+    const events = await getAllPages(`/d2l/api/le/${versions.le}/calendar/events/myEvents/?${query}`, "Objects");
+    return { data: { events, enrollments } };
+  } catch (error) {
+    return { error: error && typeof error.message === "string" ? error.message : "Couldn't read Learn" };
+  }
 }
 
 // Turns Learn's answer into deadline records.
@@ -127,65 +196,6 @@ function learnLink(event) {
     return `${LEARN_ORIGIN}/d2l/le/calendar/${event.OrgUnitId}`;
   }
   return "";
-}
-
-function isCurrentCourse(enrollment) {
-  const access = enrollment?.Access || {};
-  return enrollment?.OrgUnit?.Id != null && access.IsActive !== false && access.CanAccess !== false;
-}
-
-// Asks Learn which API versions it has, and uses the newest.
-async function apiVersions() {
-  try {
-    const products = await getJson(`${LEARN_ORIGIN}/d2l/api/versions/`);
-    const latest = (code) => products.find((product) => product.ProductCode === code)?.LatestVersion;
-    return { le: latest("le") || FALLBACK_VERSIONS.le, lp: latest("lp") || FALLBACK_VERSIONS.lp };
-  } catch {
-    return FALLBACK_VERSIONS;
-  }
-}
-
-// Learn answers in pages. Keeps asking for the next page until there are no more.
-async function getAllPages(path, listKey) {
-  const items = [];
-  let bookmark = null;
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const separator = path.includes("?") ? "&" : "?";
-    const url = LEARN_ORIGIN + path + (bookmark ? `${separator}bookmark=${encodeURIComponent(bookmark)}` : "");
-    const answer = await getJson(url);
-    items.push(...listFrom(answer?.[listKey]));
-    const paging = answer?.PagingInfo;
-    if (!paging?.HasMoreItems || !paging.Bookmark) {
-      break;
-    }
-    bookmark = paging.Bookmark;
-  }
-  return items;
-}
-
-// One request to Learn. credentials: "include" sends Chrome's Learn login with it.
-async function getJson(url) {
-  let response;
-  try {
-    response = await fetch(url, { credentials: "include", headers: { Accept: "application/json" } });
-  } catch {
-    throw new Error("Couldn't read Learn: no connection");
-  }
-  if (response.status === 401 || response.status === 403) {
-    throw new Error("Couldn't read Learn: log in to Learn in Chrome first");
-  }
-  if (!response.ok) {
-    throw new Error(`Couldn't read Learn (error ${response.status})`);
-  }
-  // Without a login, Learn sends its sign-in web page instead of data
-  if (!(response.headers.get("content-type") || "").includes("json")) {
-    throw new Error("Couldn't read Learn: log in to Learn in Chrome first");
-  }
-  try {
-    return await response.json();
-  } catch {
-    throw new Error("Couldn't read Learn: unexpected answer");
-  }
 }
 
 function listFrom(value) {
