@@ -1,6 +1,6 @@
 // Reads your Crowdmark assessments and turns them into deadline records.
 // Crowdmark has no public API, so this asks the same address its student dashboard uses,
-// from inside a Crowdmark tab (tabs.js). Nothing here sees or keeps a password or cookie.
+// from inside a Crowdmark tab (tabs.js). Nothing here sees or keeps a password or login cookie.
 
 import { makeDeadline } from "./deadlines.js";
 import { runInSite } from "./tabs.js";
@@ -67,6 +67,7 @@ export async function readCrowdmarkInPage({ path }) {
 
   const tried = [];
   const used = [];
+  const statuses = [];
   for (const [label, find] of sources) {
     let code;
     try {
@@ -95,9 +96,12 @@ export async function readCrowdmarkInPage({ path }) {
       }
     }
     tried.push(`${label}: ${response.status}`);
+    statuses.push(response.status);
   }
-  // Every way was refused: usually signed out of Crowdmark, or the code lives somewhere else
-  return { error: `Couldn't read Crowdmark (tried ${tried.join(", ")})` };
+  // Every way was refused. 401/403 on every try almost always means signed out of Crowdmark
+  const signedOut = statuses.length > 0 && statuses.every((status) => status === 401 || status === 403);
+  const start = signedOut ? "Couldn't read Crowdmark: log in to Crowdmark in Chrome first" : "Couldn't read Crowdmark";
+  return { error: `${start} (tried ${tried.join(", ")})` };
 }
 
 // Turns Crowdmark's answer into deadline records. No internet, so it can be tested alone.
