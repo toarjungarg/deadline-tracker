@@ -102,6 +102,22 @@ body {
 .deadline--quiz { --type-colour: var(--quiz); }
 .deadline--event { --type-colour: var(--event); }
 
+/* The checkbox and the text: clicking anywhere on them ticks the box */
+.deadline-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.deadline-done {
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--type-colour);
+  cursor: pointer;
+}
+
 .deadline-text {
   display: flex;
   flex-direction: column;
@@ -124,6 +140,15 @@ body {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* Ticked off as done: the row stays, greyed out, with a line through the title */
+.deadline--done {
+  opacity: 0.55;
+}
+
+.deadline--done .deadline-title {
+  text-decoration: line-through;
 }
 
 .empty {
