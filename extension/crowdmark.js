@@ -34,32 +34,70 @@ export async function readCrowdmark({ openIfMissing = false } = {}) {
 
 // Runs inside a Crowdmark tab. Chrome copies only this function's text into the page, so
 // everything it needs is inside it or passed in. Answers { data } or { error }.
-// Crowdmark's own page sends a security code (X-Csrf-Token) with each request, which it keeps
-// in the page itself; this reads it from there and only ever uses it for this one request.
+// Crowdmark's own page sends a security code (X-Csrf-Token) with each request. Sites keep that
+// code in different places, so this tries the usual ones in order and uses the first one
+// Crowdmark accepts. The codes are only used for these requests: never returned, logged or saved.
+// If none work, the error lists what was tried and what Crowdmark answered, without the codes.
 export async function readCrowdmarkInPage({ path }) {
-  const meta = document.querySelector('meta[name="csrf-token"]');
-  const code = meta ? meta.getAttribute("content") : "";
-  if (!code) {
-    return { error: "Couldn't read Crowdmark: no security code on the page" };
+  const fromMeta = (doc) => {
+    const meta = doc.querySelector('meta[name="csrf-token"]') || doc.querySelector('meta[name="csrf_token"]');
+    return (meta && meta.getAttribute("content")) || "";
+  };
+  // Only cookies named like a security code; login cookies are hidden from pages anyway
+  const fromCookie = () => {
+    const names = ["CSRF-TOKEN", "XSRF-TOKEN", "csrf-token", "csrf_token", "_csrf_token"];
+    for (const part of document.cookie.split(";")) {
+      const [name, ...rest] = part.trim().split("=");
+      if (names.includes(name)) return decodeURIComponent(rest.join("="));
+    }
+    return "";
+  };
+  // A fresh copy of the page, in case the open one holds an old code. Parsed as data, never run.
+  const fromFreshPage = async () => {
+    const page = await fetch(location.href, { credentials: "same-origin" });
+    if (!page.ok) return "";
+    return fromMeta(new DOMParser().parseFromString(await page.text(), "text/html"));
+  };
+  const sources = [
+    ["page code", async () => fromMeta(document)],
+    ["cookie code", async () => fromCookie()],
+    ["fresh page code", fromFreshPage],
+    ["no code", async () => null],
+  ];
+
+  const tried = [];
+  const used = [];
+  for (const [label, find] of sources) {
+    let code;
+    try {
+      code = await find();
+    } catch {
+      code = "";
+    }
+    if (code === "" || used.includes(code)) {
+      tried.push(`${label}: ${code === "" ? "none found" : "same as before"}`);
+      continue;
+    }
+    used.push(code);
+    const headers = { Accept: "application/vnd.api+json, application/json" };
+    if (code) headers["X-Csrf-Token"] = code;
+    let response;
+    try {
+      response = await fetch(path, { credentials: "same-origin", headers });
+    } catch {
+      return { error: "Couldn't read Crowdmark: no connection" };
+    }
+    if (response.ok) {
+      try {
+        return { data: await response.json() };
+      } catch {
+        return { error: "Couldn't read Crowdmark: the answer wasn't JSON (are you signed in?)" };
+      }
+    }
+    tried.push(`${label}: ${response.status}`);
   }
-  let response;
-  try {
-    response = await fetch(path, {
-      credentials: "same-origin",
-      headers: { Accept: "application/vnd.api+json, application/json", "X-Csrf-Token": code },
-    });
-  } catch {
-    return { error: "Couldn't read Crowdmark: no connection" };
-  }
-  if (!response.ok) {
-    // 401 or 403 usually means you're signed out of Crowdmark in Chrome
-    return { error: `Couldn't read Crowdmark: it answered ${response.status}` };
-  }
-  try {
-    return { data: await response.json() };
-  } catch {
-    return { error: "Couldn't read Crowdmark: the answer wasn't JSON (are you signed in?)" };
-  }
+  // Every way was refused: usually signed out of Crowdmark, or the code lives somewhere else
+  return { error: `Couldn't read Crowdmark (tried ${tried.join(", ")})` };
 }
 
 // Turns Crowdmark's answer into deadline records. No internet, so it can be tested alone.
