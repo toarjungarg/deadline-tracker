@@ -8,6 +8,7 @@
   --assignment: #2f6fde;
   --quiz: #e8871e;
   --event: #2e9e5b;
+  --lecture: #8e5bd6;
   --button: #1c1e21;
   --button-text: #ffffff;
   --error: #c62828;
@@ -24,6 +25,7 @@
     --assignment: #5b8def;
     --quiz: #f0a04b;
     --event: #4cc17f;
+    --lecture: #b28ef0;
     --button: #e4e6eb;
     --button-text: #18191a;
     --error: #ef7a7a;
@@ -101,6 +103,7 @@ body {
 .deadline--assignment { --type-colour: var(--assignment); }
 .deadline--quiz { --type-colour: var(--quiz); }
 .deadline--event { --type-colour: var(--event); }
+.deadline--lecture { --type-colour: var(--lecture); }
 
 /* The checkbox and the text: clicking anywhere on them ticks the box */
 .deadline-label {

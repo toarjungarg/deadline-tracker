@@ -25,7 +25,9 @@ export function eventTimes(deadline) {
 
 // "MATH 101: Assignment 5", or "Done: MATH 101: Assignment 5" once it's ticked off (done.js)
 export function eventTitle(deadline) {
-  const title = deadline.course ? `${deadline.course}: ${deadline.title}` : deadline.title;
+  let title = deadline.course ? `${deadline.course}: ${deadline.title}` : deadline.title;
+  // So a lecture on your phone's calendar never looks like something to hand in
+  if (deadline.type === "lecture") title = `Lecture: ${title}`;
   return deadline.done === true ? `Done: ${title}` : title;
 }
 
@@ -89,7 +91,7 @@ function icsEvent(deadline, now) {
 
 function eventDescription(deadline) {
   const lines = [];
-  if (deadline.type !== "event") {
+  if (deadline.type === "assignment" || deadline.type === "quiz") {
     const due = deadline.start.toLocaleString("en-CA", {
       weekday: "short",
       month: "short",

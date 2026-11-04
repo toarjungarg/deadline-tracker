@@ -198,7 +198,7 @@ function deadlineRow(deadline) {
   const text = document.createElement("span");
   text.className = "deadline-text";
   text.append(
-    textElement("span", "deadline-course", deadline.course || typeLabel(deadline.type)),
+    textElement("span", "deadline-course", courseLine(deadline)),
     textElement("span", "deadline-title", deadline.title),
   );
 
@@ -257,8 +257,14 @@ function formatTime(date) {
   return date.toLocaleTimeString("en-CA", { hour: "numeric", minute: "2-digit" });
 }
 
+// The small grey line above the title: the course, plus "(Lecture)" so lectures never look like assignments
+function courseLine(deadline) {
+  if (!deadline.course) return typeLabel(deadline.type);
+  return deadline.type === "lecture" ? `${deadline.course} (Lecture)` : deadline.course;
+}
+
 function typeLabel(type) {
-  const labels = { assignment: "Assignment", quiz: "Quiz", event: "Event" };
+  const labels = { assignment: "Assignment", quiz: "Quiz", event: "Event", lecture: "Lecture" };
   return labels[type] || type;
 }
 

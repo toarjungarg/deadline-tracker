@@ -151,13 +151,13 @@ function toDeadline(event, courseNames) {
     sourceId: event.CalendarEventId != null ? String(event.CalendarEventId) : "",
     type,
     course: courseNames.get(event.OrgUnitId) || event.OrgUnitName || "",
-    title: String(event.Title || "").trim(),
+    title: type === "lecture" ? cleanTitle(String(event.Title || "").trim()) : String(event.Title || "").trim(),
     link: learnLink(event),
   };
 
   try {
     if (type !== "event") {
-      // For assignments and quizzes Learn puts the due time in the event; the end is the due time
+      // For assignments, quizzes and lectures Learn puts one time in the event; the end is that time
       return makeDeadline({ ...common, start: toDate(event.EndDateTime) || toDate(event.StartDateTime) });
     }
     if (event.IsAllDayEvent) {
@@ -182,7 +182,22 @@ function learnType(event) {
   const kind = String(event.AssociatedEntity?.AssociatedEntityType || "");
   if (/dropbox/i.test(kind)) return "assignment";
   if (/quiz/i.test(kind)) return "quiz";
+  // A dated page, video or file in a course's Content (like a library session): not something to hand in
+  if (/content/i.test(kind)) return "lecture";
   return "event";
+}
+
+// Learn names some content topics like files: "MTE100_Effectively_Searching_for_Patent_Literature_11_03_2026_BALL".
+// Turns those into "Effectively Searching for Patent Literature" by dropping the course code at the
+// start and the date (and anything after it) at the end. Normal titles with spaces are left alone.
+function cleanTitle(title) {
+  if (/\s/.test(title) || !title.includes("_")) return title;
+  const cleaned = title
+    .replace(/^[A-Z]{2,6}\d{2,4}[A-Z]?_/, "")
+    .replace(/_\d{1,2}_\d{1,2}_\d{4}(_.*)?$/, "")
+    .replace(/_+/g, " ")
+    .trim();
+  return cleaned || title;
 }
 
 // A link back to the item on Learn. Only learn.uwaterloo.ca links are kept.

@@ -2,12 +2,12 @@
 // Learn, Crowdmark and anything added later all turn their data into this one shape,
 // so the rest of the extension only has to understand one thing.
 
-export const TYPES = ["assignment", "quiz", "event"];
+export const TYPES = ["assignment", "quiz", "event", "lecture"];
 
 // Makes one deadline record and checks it has everything it needs.
 //   source, sourceId: where it came from ("learn", "crowdmark") and that site's own id for it
-//   type:   "assignment", "quiz" or "event"
-//   start:  the due time for assignments and quizzes, the start time for events
+//   type:   "assignment", "quiz", "event" or "lecture" (a dated Learn page, video or file: not something to hand in)
+//   start:  the due time for assignments and quizzes, the start time for events and lectures
 //   end:    only for events with an end time (null otherwise)
 //   allDay: true for events with no set time, like a class event day
 export function makeDeadline({
