@@ -9,7 +9,7 @@ const SITE = "https://app.crowdmark.com";
 
 // Crowdmark's internal address and field names, all in one place.
 // The address is the one Crowdmark's own dashboard asks (seen in DevTools, Nov 2026).
-// The field names are still a best guess until checked against a real response.
+// "due" and "title" are checked against a real answer; the other names are kept as backups.
 export const CROWDMARK_API = {
   assessments:
     "/api/v2/student/assignments?fields%5Bexam-masters%5D%5B%5D=type&fields%5Bexam-masters%5D%5B%5D=title" +
@@ -105,27 +105,34 @@ export async function readCrowdmarkInPage({ path }) {
 }
 
 // Turns Crowdmark's answer into deadline records. No internet, so it can be tested alone.
-// Expected shape: { data: [{ id, type, attributes, relationships }], included: [courses] }
+// Real shape (checked against a real answer, Nov 2026):
+//   data: your assignments, each with its "due" date and a pointer to an "exam-master"
+//   included: the exam-masters, which hold the title, the kind (like "ExamMaster::AtHome")
+//             and a pointer to the course (an id like "mte-100-fall-2026", no name)
 // Anything without a due date, or that doesn't fit, is skipped instead of breaking the list.
 export function parseCrowdmark(json) {
   const items = Array.isArray(json?.data) ? json.data : [];
   const courses = courseNames(json?.included);
+  const masters = examMasters(json?.included);
   const deadlines = [];
 
   for (const item of items) {
     const attributes = item?.attributes || {};
-    const due = toDate(pick(attributes, CROWDMARK_API.dueFields));
-    const title = pick(attributes, CROWDMARK_API.titleFields);
+    const masterId = item?.relationships?.["exam-master"]?.data?.id;
+    const master = (masterId != null && masters.get(String(masterId))) || {};
+    const masterAttributes = master.attributes || {};
+    const due = toDate(pick(attributes, CROWDMARK_API.dueFields) ?? pick(masterAttributes, CROWDMARK_API.dueFields));
+    const title = pick(masterAttributes, CROWDMARK_API.titleFields) ?? pick(attributes, CROWDMARK_API.titleFields);
     if (!item?.id || !due || typeof title !== "string" || !title) {
       continue;
     }
-    const courseId = item.relationships?.course?.data?.id;
+    const courseId = master.relationships?.course?.data?.id ?? item.relationships?.course?.data?.id;
     deadlines.push(
       makeDeadline({
         source: "crowdmark",
         sourceId: String(item.id),
-        type: looksLikeQuiz(attributes) ? "quiz" : "assignment",
-        course: courses.get(String(courseId)) || "",
+        type: looksLikeQuiz(attributes, masterAttributes) ? "quiz" : "assignment",
+        course: courses.get(String(courseId)) || courseFromId(courseId),
         title,
         start: due,
         link: CROWDMARK_API.link(item.id),
@@ -133,6 +140,22 @@ export function parseCrowdmark(json) {
     );
   }
   return deadlines;
+}
+
+// Exam-master id to exam-master, from the "included" part of the answer
+function examMasters(included) {
+  const masters = new Map();
+  for (const entry of Array.isArray(included) ? included : []) {
+    if (entry?.type === "exam-masters" && entry.id != null) masters.set(String(entry.id), entry);
+  }
+  return masters;
+}
+
+// Crowdmark sends only a course id like "mte-100-fall-2026", so this makes "MTE 100" from it.
+// Anything that doesn't start like a course code gives no course rather than a wrong one.
+function courseFromId(id) {
+  const match = /^([a-z]{2,6})-(\d{2,4}[a-z]?)(?:-|$)/i.exec(String(id ?? ""));
+  return match ? `${match[1].toUpperCase()} ${match[2].toUpperCase()}` : "";
 }
 
 // Course id to course name, from the "included" part of the answer
@@ -160,9 +183,11 @@ function toDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-// Only the assessment's own kind counts, not its record type: Crowdmark may call every
-// assessment an "exam" internally, which would wrongly make everything a quiz.
-function looksLikeQuiz(attributes) {
-  const kind = String(attributes["exam-type"] || attributes.kind || "").toLowerCase();
+// Only the assessment's own kind counts, not its record type. Crowdmark calls every
+// assessment an exam-master, with the kind after "ExamMaster::" (a take-home one is
+// "ExamMaster::AtHome"), so that prefix is dropped first or everything would look like a quiz.
+function looksLikeQuiz(attributes, masterAttributes = {}) {
+  const raw = attributes["exam-type"] || attributes.kind || masterAttributes.type || "";
+  const kind = String(raw).replace(/^ExamMaster::/i, "").toLowerCase();
   return CROWDMARK_API.quizWords.some((word) => kind.includes(word));
 }
