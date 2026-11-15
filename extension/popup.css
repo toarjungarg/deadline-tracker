@@ -33,7 +33,7 @@
 }
 
 body {
-  width: 360px;
+  width: 320px;
   margin: 0;
   padding: 14px 16px 12px;
   background: var(--bg);
@@ -210,11 +210,15 @@ body {
   color: var(--text);
 }
 
+/* The three footer buttons fill the whole row, so there's no empty gap beside them */
 .buttons {
   display: flex;
-  flex-shrink: 0;
+  flex: 1 1 100%;
   gap: 6px;
-  margin-left: auto;
+}
+
+.buttons .button {
+  flex: 1 1 auto;
 }
 
 /* "Couldn't read Crowdmark" and similar */
