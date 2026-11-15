@@ -12,13 +12,14 @@ Since I used made-up data for this demo, there's no Sync now button. In the real
 - Puts them in a separate "Deadlines" calendar in Google Calendar, so nothing touches my other events
 - Updates an event when its due date changes, instead of making a copy
 - Lets me tick a deadline as done. It gets crossed out, and the calendar event is marked "Done"
-- Checks for new deadlines once an hour while Chrome is open
+- Checks for new deadlines once an hour, and whenever I open Learn or Crowdmark. The hourly check only reads a site that has a tab open
 - Downloads the list as an .ics file for Apple Calendar or any other calendar app
 
 ## How it works
 
 - The popup has a list of everything it found, a Sync now button, and a button that opens Google Calendar.
 - Each site is read inside its own tab, so the extension uses the login already open in Chrome.
+- If a site isn't open when I press Sync now, the extension opens it in a background tab, reads it, and closes the tab again.
 - Google sign-in uses Chrome's built-in sign-in. The extension asks for access only to the calendar it creates.
 - Everything it saves stays on my computer, except the events it writes to Google Calendar.
 
