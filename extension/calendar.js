@@ -1,5 +1,5 @@
 // Turns deadline records into calendar events, two ways:
-//   toGoogleEvent: the shape the Google Calendar API expects (sent once Google sign-in is added)
+//   toGoogleEvent: the shape the Google Calendar API expects (sent by calendar-sync.js)
 //   toIcs:         a .ics calendar file, the standard format Google, Apple and Outlook all read.
 //                  A calendar subscription link is just a web address that serves this same text.
 
@@ -39,7 +39,8 @@ export function toGoogleEvent(deadline) {
     description: eventDescription(deadline),
     start: deadline.allDay ? { date: localDateString(start) } : { dateTime: start.toISOString() },
     end: deadline.allDay ? { date: localDateString(end) } : { dateTime: end.toISOString() },
-    // Saved on the event so the extension can find it again and update it instead of adding a copy
+    // A label on the event saying which deadline it belongs to. Nothing reads it back yet:
+    // calendar-sync.js keeps its own list of which event goes with which deadline
     extendedProperties: { private: { deadlineId: deadline.id } },
   };
   if (isWebLink(deadline.link)) {

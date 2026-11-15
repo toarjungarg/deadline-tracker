@@ -14,7 +14,7 @@ export const CROWDMARK_API = {
   assessments:
     "/api/v2/student/assignments?fields%5Bexam-masters%5D%5B%5D=type&fields%5Bexam-masters%5D%5B%5D=title" +
     "&fields%5Bexam-masters%5D%5B%5D=course&filter%5Bupcoming%5D=true&filter%5Btype%5D=assigned&sort=due",
-  // Field names tried in order, since the real ones aren't confirmed yet
+  // Field names tried in order: the real one first, then backups in case Crowdmark renames it
   dueFields: ["due", "due-at", "dueAt", "due_at", "ends-at", "endsAt"],
   titleFields: ["title", "name"],
   courseNameFields: ["name", "title", "code"],

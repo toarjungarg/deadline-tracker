@@ -1,5 +1,5 @@
 // Runs the Learn and Crowdmark readers, joins their lists and saves the result.
-// Nothing here touches the popup page, so the background timer (step 8) can use it too.
+// Nothing here touches the popup page, so the background timer (background.js) can use it too.
 
 import { makeDeadline, sortByStart } from "./deadlines.js";
 import { readLearn } from "./learn.js";

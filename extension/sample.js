@@ -1,6 +1,5 @@
-// Made-up deadlines so the popup has something to show before Learn and Crowdmark
-// are connected. Dates are worked out from today, so they're always upcoming.
-// Delete this file once real deadlines come in.
+// Made-up deadlines for the popup's demo mode (popup.html?demo), so screenshots and
+// recordings show no real courses. Dates are worked out from today, so they're always upcoming.
 
 import { makeDeadline } from "./deadlines.js";
 
