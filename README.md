@@ -4,7 +4,7 @@ A Chrome extension that gathers my University of Waterloo deadlines from Learn a
 
 ![Ticking deadlines as done in the popup](images/demo.gif)
 
-Since I used made-up data for this demo, there's no Sync now button. In the real extension, Sync now is to the left of Calendar.
+Since I used made-up data for this demo, there's no Sync now button. In the real extension, Sync now is to the left of Calendar. The Google sign-in row at the top is hidden in the demo too.
 
 ## What it does
 
@@ -22,7 +22,7 @@ Since I used made-up data for this demo, there's no Sync now button. In the real
 - Each site is read inside its own tab, so the extension uses the login already open in Chrome.
 - If a site isn't open when I press Sync now, the extension opens it in a background tab, reads it, and closes the tab again.
 - Google sign-in uses Chrome's built-in sign-in. The extension asks for access only to the calendar it creates.
-- Everything it saves stays on my computer, except the events it writes to Google Calendar.
+- Everything it saves stays on the computer it is installed on, except the events it writes to Google Calendar.
 
 ## Privacy and permissions
 
@@ -38,6 +38,8 @@ Since I used made-up data for this demo, there's no Sync now button. In the real
 - `PRIVACY.md` is the privacy policy.
 
 ## Install from source
+
+It needs Google Chrome, and it is only useful if you have a University of Waterloo login for Learn or Crowdmark.
 
 1. Download this repo (Code, then Download ZIP, then unzip it) or clone it.
 2. Open `chrome://extensions` and turn on Developer mode.
