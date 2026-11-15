@@ -24,6 +24,7 @@ async function main() {
   const now = new Date();
   showToday(now);
   byId("download-ics").addEventListener("click", () => downloadIcs(shown));
+  byId("open-calendar").addEventListener("click", openCalendar);
 
   // popup.html?demo shows made-up deadlines, for screenshots with no private info
   if (new URLSearchParams(location.search).has("demo")) {
@@ -279,6 +280,12 @@ function downloadIcs(deadlines) {
   // Give the download a moment to start before freeing the file from memory
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   setStatus("Saved deadlines.ics");
+}
+
+// Opens Google Calendar in a new tab. Opening a tab needs no extra permission
+// (the "tabs" permission is only for reading other tabs' addresses and titles).
+function openCalendar() {
+  chrome.tabs.create({ url: "https://calendar.google.com/calendar/r" });
 }
 
 function setStatus(text) {

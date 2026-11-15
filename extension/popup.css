@@ -33,7 +33,7 @@
 }
 
 body {
-  width: 320px;
+  width: 360px;
   margin: 0;
   padding: 14px 16px 12px;
   background: var(--bg);
@@ -160,11 +160,12 @@ body {
   text-align: center;
 }
 
-/* Bottom: status on the left, button on the right */
+/* Bottom: the status line, then the three buttons under it on the right
+   (all on one line doesn't fit in the popup) */
 .footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   margin-top: 10px;
   padding-top: 10px;
@@ -172,8 +173,13 @@ body {
 }
 
 .status {
+  flex: 1 1 100%;
   color: var(--muted);
   font-size: 12px;
+}
+
+.status:empty {
+  display: none;
 }
 
 .button {
@@ -208,6 +214,7 @@ body {
   display: flex;
   flex-shrink: 0;
   gap: 6px;
+  margin-left: auto;
 }
 
 /* "Couldn't read Crowdmark" and similar */
