@@ -1,6 +1,6 @@
 # Privacy policy for Deadline Tracker
 
-Last updated: November 3, 2026
+Last updated: November 15, 2026
 
 Deadline Tracker reads your deadlines from Waterloo Learn and Crowdmark and adds them to a calendar in your Google account.
 
