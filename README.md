@@ -2,6 +2,10 @@
 
 A Chrome extension that gathers my University of Waterloo deadlines from Learn and Crowdmark and puts them in one Google Calendar. I use it every day, and my Apple Calendar subscribes to that same calendar.
 
+![Ticking deadlines as done in the popup](images/demo.gif)
+
+Since I used made-up data for this demo, there's no Sync now button. In the real extension, Sync now is to the left of Calendar.
+
 ## What it does
 
 - Reads assignments, quizzes and course events from Learn and Crowdmark, using the logins already in Chrome
@@ -28,6 +32,7 @@ A Chrome extension that gathers my University of Waterloo deadlines from Learn a
 ## Project layout
 
 - `extension/` is the extension itself: `manifest.json`, the popup, and the Learn, Crowdmark and Google code.
+- `images/` holds the demo GIF for this README.
 - `PRIVACY.md` is the privacy policy linked from the Chrome Web Store listing.
 
 ## Install from source
