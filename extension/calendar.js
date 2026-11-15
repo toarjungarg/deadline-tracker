@@ -1,7 +1,7 @@
 // Turns deadline records into calendar events, two ways:
 //   toGoogleEvent: the shape the Google Calendar API expects (sent by calendar-sync.js)
-//   toIcs:         a .ics calendar file, the standard format Google, Apple and Outlook all read.
-//                  A calendar subscription link is just a web address that serves this same text.
+//   toIcs:         a .ics calendar file, the standard format Google, Apple and Outlook all read
+//                  (what the popup's Download .ics button saves).
 
 import { startOfDay } from "./deadlines.js";
 
