@@ -11,6 +11,7 @@ Since I used made-up data for this demo, there's no Sync now button. In the real
 - Reads assignments, quizzes and course events from Learn and Crowdmark, using the logins already in Chrome
 - Puts them in a separate "Deadlines" calendar in Google Calendar, so nothing touches my other events
 - Updates an event when its due date changes, instead of making a copy
+- Never deletes a calendar event, so a deadline that gets cancelled on Learn stays until I delete it myself. Removing the extension and adding it again makes a second "Deadlines" calendar
 - Lets me tick a deadline as done. It gets crossed out, and the calendar event is marked "Done"
 - Checks for new deadlines once an hour, and whenever I open Learn or Crowdmark. The hourly check only reads a site that has a tab open
 - Downloads the list as an .ics file for Apple Calendar or any other calendar app
