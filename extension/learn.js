@@ -187,8 +187,8 @@ function learnType(event) {
   return "event";
 }
 
-// Learn names some content topics like files: "MTE100_Effectively_Searching_for_Patent_Literature_11_03_2026_BALL".
-// Turns those into "Effectively Searching for Patent Literature" by dropping the course code at the
+// Learn names some content topics like files: "MATH101_Intro_to_Limits_11_03_2026_ROOM".
+// Turns those into "Intro to Limits" by dropping the course code at the
 // start and the date (and anything after it) at the end. Normal titles with spaces are left alone.
 function cleanTitle(title) {
   if (/\s/.test(title) || !title.includes("_")) return title;
