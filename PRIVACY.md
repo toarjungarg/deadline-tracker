@@ -17,7 +17,8 @@ On your computer only:
 
 - the deadlines it found (course, title, date, link)
 - which ones you marked done
-- which calendar event goes with which deadline
+- which calendar event goes with which deadline, and the id of the "Deadlines" calendar
+- a short note about the last sync: when it ran, how many events it added or updated, and any error messages
 
 ## Where your data goes
 
