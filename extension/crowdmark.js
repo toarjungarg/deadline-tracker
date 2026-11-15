@@ -38,7 +38,8 @@ export async function readCrowdmark({ openIfMissing = false } = {}) {
 // Crowdmark's own page sends a security code (X-Csrf-Token) with each request. Sites keep that
 // code in different places, so this tries the usual ones in order and uses the first one
 // Crowdmark accepts. The codes are only used for these requests: never returned, logged or saved.
-// If none work, the error lists what was tried and what Crowdmark answered, without the codes.
+// If none work and every answer was 401/403, the error just says to log in. For anything else
+// it lists what was tried and what Crowdmark answered, without the codes.
 export async function readCrowdmarkInPage({ path }) {
   const fromMeta = (doc) => {
     const meta = doc.querySelector('meta[name="csrf-token"]') || doc.querySelector('meta[name="csrf_token"]');
@@ -101,8 +102,9 @@ export async function readCrowdmarkInPage({ path }) {
   }
   // Every way was refused. 401/403 on every try almost always means signed out of Crowdmark
   const signedOut = statuses.length > 0 && statuses.every((status) => status === 401 || status === 403);
-  const start = signedOut ? "Couldn't read Crowdmark: log in to Crowdmark in Chrome first" : "Couldn't read Crowdmark";
-  return { error: `${start} (tried ${tried.join(", ")})` };
+  if (signedOut) return { error: "Couldn't read Crowdmark: log in to Crowdmark in Chrome first" };
+  // Anything else is unexpected, so the error says what was tried to help work out what changed
+  return { error: `Couldn't read Crowdmark (tried ${tried.join(", ")})` };
 }
 
 // Turns Crowdmark's answer into deadline records. No internet, so it can be tested alone.
