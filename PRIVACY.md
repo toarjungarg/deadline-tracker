@@ -23,7 +23,7 @@ On your computer only:
 
 Only to Google Calendar, in a "Deadlines" calendar the extension makes. It can only see and change calendars it made, not the rest of your calendar. Nothing is sent to me or anyone else. No analytics, no tracking, no ads, and your data is never sold or shared.
 
-Deadline Tracker's use of information received from Google APIs follows the Chrome Web Store User Data Policy, including the Limited Use requirements.
+Deadline Tracker's use of information received from Google APIs follows the Google API Services User Data Policy, including the Limited Use requirements.
 
 ## Google sign-in
 

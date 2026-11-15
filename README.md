@@ -33,14 +33,15 @@ Since I used made-up data for this demo, there's no Sync now button. In the real
 
 - `extension/` is the extension itself: `manifest.json`, the popup, and the Learn, Crowdmark and Google code.
 - `images/` holds the demo GIF for this README.
-- `PRIVACY.md` is the privacy policy linked from the Chrome Web Store listing.
+- `PRIVACY.md` is the privacy policy.
 
 ## Install from source
 
-1. Clone this repo.
+1. Download this repo (Code, then Download ZIP, then unzip it) or clone it.
 2. Open `chrome://extensions` and turn on Developer mode.
 3. Click "Load unpacked" and pick the `extension/` folder.
-4. Sign in to Learn and Crowdmark in Chrome, then open the extension and press Sync now.
+4. Sign in to Learn and Crowdmark in Chrome.
+5. Open the extension, sign in with Google, and press Sync now.
 
 ## Built by
 
