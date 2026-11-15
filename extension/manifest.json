@@ -8,7 +8,7 @@
   "host_permissions": [
     "https://learn.uwaterloo.ca/*",
     "https://app.crowdmark.com/*",
-    "https://www.googleapis.com/*"
+    "https://www.googleapis.com/calendar/*"
   ],
   "oauth2": {
     "client_id": "803540093160-ondsvl2mjk7ie3raeg0er5ipkd8ubpea.apps.googleusercontent.com",
