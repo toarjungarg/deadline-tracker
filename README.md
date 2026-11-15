@@ -39,7 +39,7 @@ Since I used made-up data for this demo, there's no Sync now button. In the real
 
 ## Install from source
 
-It needs Google Chrome, and it is only useful if you have a University of Waterloo login for Learn or Crowdmark.
+It needs Google Chrome. The Learn part only works with the University of Waterloo's Learn. The Crowdmark part should work for any school, but I have only tried it with Waterloo.
 
 1. Download this repo (Code, then Download ZIP, then unzip it) or clone it.
 2. Open `chrome://extensions` and turn on Developer mode.
