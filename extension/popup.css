@@ -32,8 +32,15 @@
   }
 }
 
+/* Chrome cuts a popup off at 600px tall. The body stops at 600px and is a column,
+   so when an error line takes space, the list (which scrolls) shrinks instead of
+   the buttons at the bottom getting cut off. */
 body {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   width: 320px;
+  max-height: 600px;
   margin: 0;
   padding: 14px 16px 12px;
   background: var(--bg);
@@ -72,8 +79,15 @@ body {
   font-size: 12px;
 }
 
-/* The list scrolls if it gets long */
+/* Everything keeps its full height except the list */
+body > * {
+  flex-shrink: 0;
+}
+
+/* The list scrolls if it gets long, and shrinks if the popup runs out of room */
 .list {
+  flex-shrink: 1;
+  min-height: 0;
   max-height: 390px;
   margin-top: 6px;
   overflow-y: auto;
@@ -208,6 +222,36 @@ body {
   border: 1px solid var(--line);
   background: transparent;
   color: var(--text);
+}
+
+/* Hover label for buttons with data-tip. Chrome's own title tooltip waits about
+   a second and that can't be changed, so this one is drawn here and shows in 0.2s. */
+.button[data-tip] {
+  position: relative;
+}
+
+.button[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--button);
+  color: var(--button-text);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.button[data-tip]:hover::after,
+.button[data-tip]:focus-visible::after {
+  opacity: 1;
+  transition-delay: 0.2s;
 }
 
 /* The three footer buttons fill the whole row, so there's no empty gap beside them */
