@@ -20,7 +20,8 @@ export const CROWDMARK_API = {
   courseNameFields: ["name", "title", "code"],
   // Words that mean a timed test rather than an assignment
   quizWords: ["test", "exam", "quiz", "midterm", "timed"],
-  link: (id) => `${SITE}/student/assessments/${encodeURIComponent(id)}`,
+  // The page address uses the exam-master's id (like "assignment-5-1a2b3"), not the assignment's own id
+  link: (masterId) => `${SITE}/student/assessments/${encodeURIComponent(masterId)}`,
 };
 
 // Asks Crowdmark for your assessments and returns deadline records.
@@ -135,7 +136,8 @@ export function parseCrowdmark(json) {
         course: courses.get(String(courseId)) || courseFromId(courseId),
         title,
         start: due,
-        link: CROWDMARK_API.link(item.id),
+        // No exam-master id means no link, since a link made from the assignment id doesn't open
+        link: masterId != null ? CROWDMARK_API.link(masterId) : "",
       }),
     );
   }
