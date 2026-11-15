@@ -174,8 +174,8 @@ body > * {
   text-align: center;
 }
 
-/* Bottom: the status line, then the three buttons under it on the right
-   (all on one line doesn't fit in the popup) */
+/* Bottom: the three buttons, then the status line under them
+   (under, so the buttons' hover label never covers it) */
 .footer {
   display: flex;
   flex-wrap: wrap;
